@@ -1,20 +1,20 @@
 package com.example.A10dance_Tracker_2ndreview.attendanceTracker.data;
 import java.util.Date;
 public class PostLogInRequest {
-    private Date currentDateTime ;
+    private Date currentLogInTime;
 
     public PostLogInRequest() {
         // Default constructor
     }
-    public PostLogInRequest(Date currentDateTime) {
-        this.currentDateTime = currentDateTime;
+    public PostLogInRequest(Date currentLogInTime) {
+        this.currentLogInTime = currentLogInTime;
     }
 
-    public Date getCurrentDateTime() {
-        return currentDateTime;
+    public Date getCurrentLogInTime() {
+        return currentLogInTime;
     }
 
-    public void setCurrentDateTime(Date currentDateTime) {
-        this.currentDateTime = currentDateTime;
+    public void setCurrentLogInTime(Date currentLogInTime) {
+        this.currentLogInTime = currentLogInTime;
     }
 }
