@@ -11,6 +11,8 @@ import java.sql.PreparedStatement;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.format.TextStyle;
 import java.util.*;
 
 @Service
@@ -19,12 +21,24 @@ public class AttendanceService {
     @Autowired
     private AttendanceRepository attendanceRepository ;
     private int currentId = 0 ;
+
+    public AttendanceService(AttendanceRepository attendanceRepository) {
+        this.attendanceRepository = attendanceRepository;
+    }
+
+
     public PostLogInResponse saveLogInTime(PostLogInRequest request) {
 
         Date currentLogInTime = request.getCurrentLogInTime();
         Attendance attendance = new Attendance();
-        attendance.setLogInTime(currentLogInTime);
+       Attendance existingRecord = attendanceRepository.findByLogInTime(request.getCurrentLogInTime());
 
+        if(existingRecord != null && existingRecord.getLogInTime() != null) {
+            throw new IllegalStateException("User is Already LogIn For Today");
+
+        }
+
+        attendance.setLogInTime(currentLogInTime);
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(currentLogInTime);
         calendar.set(Calendar.HOUR_OF_DAY, 23);
@@ -52,7 +66,14 @@ public class AttendanceService {
 
         Date currentLogOutTime = request.getCurrentLogOutTime();
         Attendance attendance = new Attendance();
+
         attendance = attendanceRepository.findById(currentId);
+
+        if(attendance == null)
+        {
+            throw new IllegalStateException("User is Not LogIn ");
+        }
+
         attendance.setLogOutTime(currentLogOutTime);
        Date currentLogInTime =  attendance.getLogInTime() ;
         long workingTimeMillis = currentLogOutTime.getTime() - currentLogInTime.getTime();
@@ -76,14 +97,17 @@ public class AttendanceService {
         calendar.add(Calendar.DAY_OF_YEAR, -5);
         Date fiveDaysAgo = calendar.getTime();
         List<Attendance> previousAttendanceRecord = attendanceRepository.findByLogInTimeAfter(fiveDaysAgo);
+        Collections.reverse(previousAttendanceRecord);
+
         for(Attendance record : previousAttendanceRecord)
         {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.ENGLISH);
+            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a");
             String loginDate = dateFormat.format(record.getLogInTime());
             String loginTime = timeFormat.format(record.getLogInTime());
             String logoutTime = timeFormat.format(record.getLogOutTime());
-            response.addAttendanceRecord(new GetPreviousRecordSummary(loginDate, loginTime, logoutTime ));
+            String workingTime = String.valueOf(record.getWorkingTime());
+            response.addAttendanceRecord(new GetPreviousRecordSummary(loginDate, loginTime, logoutTime,workingTime ));
 
 
         }
@@ -92,18 +116,28 @@ public class AttendanceService {
     }
 
     public GetMonthlyRecordResponse getMonthlyRecord(GetMonthlyRecordRequest request) {
-        Map<Integer, Long> monthlyWiseRecord = new HashMap<>();
-        List<MonthlyWorkingTime> monthlyWiseRecordList = attendanceRepository.fetchMonthlyData();
-        for (MonthlyWorkingTime record : monthlyWiseRecordList) {
-            System.out.println("Month: " + record.getMonth() + ", Total Working Minutes: " + record.getTotalworkingTime());
-        }
+        Map<String, BigDecimal> monthlyWiseRecord = new HashMap<>();
+
+        Date currentDate = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(currentDate);
+        calendar.add(Calendar.MONTH, -2);
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        Date startDate = calendar.getTime();
+        System.out.println(startDate);
+        Date endDate = currentDate;
+        List<MonthlyWorkingTime> monthlyWiseRecordList = attendanceRepository.fetchMonthlyData(startDate , endDate);
         for (var record : monthlyWiseRecordList) {
-           //  monthlyWiseRecord.put(record.getMonth(), record.getMonth());
+            String monthName = Month.of(record.getMonth()).getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+
+          //  String formattedMonthYear = monthName + " "
+            monthlyWiseRecord.put(monthName, record.getTotalworkingTime());
+
         }
 
         GetMonthlyRecordResponse response = new GetMonthlyRecordResponse();
-        for (Map.Entry<Integer, Long> entry : monthlyWiseRecord.entrySet()) {
-            response.addMonthlyWorkingHour(new GetMonthlyRecordSummary(null, entry.getKey(), entry.getValue()));
+        for (Map.Entry<String , BigDecimal> entry : monthlyWiseRecord.entrySet()) {
+            response.addMonthlyWorkingHour(new GetMonthlyRecordSummary( entry.getKey(), entry.getValue()));
         }
         return response;
     }
