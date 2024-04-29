@@ -1,1 +1,3 @@
-# A10dance_Portal
+Welcome to the Attendance Tracker app! This application is designed to streamline the process of tracking employee attendance within your organization. With intuitive features and user-friendly interface, it simplifies the task of managing attendance records while providing valuable insights into employee attendance patterns.Real-Time Attendance Tracking:
+The app allows employees to log in and log out during office hours, enabling real-time tracking of their attendance status. This feature ensures accurate and up-to-date attendance records, facilitating efficient monitoring of employee presence.
+The Attendance Tracker app provides access to historical attendance data, allowing users to view attendance records for the past three months.
